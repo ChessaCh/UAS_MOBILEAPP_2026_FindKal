@@ -1,0 +1,262 @@
+import uuid
+import random
+import datetime
+from django.db import models
+from django.utils import timezone
+from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
+
+OTP_EXPIRY_MINUTES = 10
+RESET_TOKEN_EXPIRY_MINUTES = 15
+
+
+class UserManager(BaseUserManager):
+    def create_user(self, email, name, password=None, **extra_fields):
+        if not email:
+            raise ValueError("Email is required")
+        email = self.normalize_email(email)
+        user = self.model(email=email, name=name, **extra_fields)
+        user.set_password(password)
+        user.save(using=self._db)
+        return user
+
+    def create_superuser(self, email, name, password=None, **extra_fields):
+        extra_fields.setdefault("is_staff", True)
+        extra_fields.setdefault("is_superuser", True)
+        extra_fields.setdefault("is_email_verified", True)
+        return self.create_user(email, name, password, **extra_fields)
+
+
+class User(AbstractBaseUser, PermissionsMixin):
+    class Role(models.TextChoices):
+        USER = "user", "User"
+        LOCAL = "local", "Local"
+
+    name = models.CharField(max_length=100)
+    username = models.CharField(max_length=50, unique=True, blank=True)
+    email = models.EmailField(unique=True)
+    role = models.CharField(max_length=10, choices=Role.choices, default=Role.USER)
+    is_email_verified = models.BooleanField(default=False)
+
+    # Address — used to restrict locals to their own province
+    negara = models.CharField(max_length=50, blank=True)
+    provinsi = models.CharField(max_length=50, blank=True)
+    kota = models.CharField(max_length=50, blank=True)
+    kecamatan = models.CharField(max_length=50, blank=True)
+    kelurahan = models.CharField(max_length=50, blank=True)
+
+    bio = models.TextField(blank=True, default='')
+    profile_photo = models.ImageField(upload_to='profile_photos/', blank=True, null=True)
+    warga_lokal_region = models.CharField(max_length=100, blank=True, default='')
+
+    is_active = models.BooleanField(default=True)
+    is_staff = models.BooleanField(default=False)
+    date_joined = models.DateTimeField(auto_now_add=True)
+
+    USERNAME_FIELD = "email"
+    REQUIRED_FIELDS = ["name"]
+
+    objects = UserManager()
+
+    def __str__(self):
+        return f"{self.name} ({self.email})"
+
+    @property
+    def is_local(self):
+        return self.role == self.Role.LOCAL
+
+
+class EmailVerification(models.Model):
+    class Purpose(models.TextChoices):
+        VERIFY_EMAIL = "verify_email", "Verify Email"
+        RESET_PASSWORD = "reset_password", "Reset Password"
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="verifications")
+    code = models.CharField(max_length=6)
+    purpose = models.CharField(max_length=20, choices=Purpose.choices, default=Purpose.VERIFY_EMAIL)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+    is_used = models.BooleanField(default=False)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def save(self, *args, **kwargs):
+        if not self.pk:
+            self.expires_at = timezone.now() + datetime.timedelta(minutes=OTP_EXPIRY_MINUTES)
+        super().save(*args, **kwargs)
+
+    @staticmethod
+    def generate_code():
+        return f"{random.randint(0, 999999):06d}"
+
+    def is_valid(self):
+        return not self.is_used and timezone.now() < self.expires_at
+
+    def verify(self, code):
+        if self.is_valid() and self.code == code:
+            self.is_used = True
+            self.save(update_fields=["is_used"])
+            if self.purpose == self.Purpose.VERIFY_EMAIL:
+                self.user.is_email_verified = True
+                self.user.save(update_fields=["is_email_verified"])
+            return True
+        return False
+
+    def __str__(self):
+        return f"OTP({self.purpose}) for {self.user.email} ({'used' if self.is_used else 'active'})"
+
+
+class PasswordResetToken(models.Model):
+    """
+    Short-lived token issued after a valid OTP is submitted.
+    The app holds this token and presents it when setting the new password.
+    """
+    token = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="reset_tokens")
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+    is_used = models.BooleanField(default=False)
+
+    def save(self, *args, **kwargs):
+        if not self.pk:
+            self.expires_at = timezone.now() + datetime.timedelta(minutes=RESET_TOKEN_EXPIRY_MINUTES)
+        super().save(*args, **kwargs)
+
+    def is_valid(self):
+        return not self.is_used and timezone.now() < self.expires_at
+
+    def __str__(self):
+        return f"ResetToken for {self.user.email} ({'used' if self.is_used else 'active'})"
+
+
+class PendingEmailVerification(models.Model):
+    """
+    Temporary OTP store for pre-registration email verification.
+    No User FK — the record is deleted or marked used once registration completes.
+    """
+    email = models.EmailField(db_index=True)
+    code = models.CharField(max_length=6)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+    is_used = models.BooleanField(default=False)
+    is_verified = models.BooleanField(default=False)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def save(self, *args, **kwargs):
+        if not self.pk:
+            self.expires_at = timezone.now() + datetime.timedelta(minutes=OTP_EXPIRY_MINUTES)
+        super().save(*args, **kwargs)
+
+    def is_valid(self):
+        return not self.is_used and timezone.now() < self.expires_at
+
+    def verify(self, code):
+        if self.is_valid() and self.code == code:
+            self.is_used = True
+            self.is_verified = True
+            self.save(update_fields=["is_used", "is_verified"])
+            return True
+        return False
+
+    def __str__(self):
+        return f"PendingOTP for {self.email} ({'verified' if self.is_verified else 'used' if self.is_used else 'active'})"
+
+
+BUDGET_CHOICES = [
+    ("Rp 1k - Rp 50k",     "Rp 1k - Rp 50k"),
+    ("Rp 50k - Rp 100k",   "Rp 50k - Rp 100k"),
+    ("Rp 100k - Rp 150k",  "Rp 100k - Rp 150k"),
+    ("Rp 150k - Rp 200k",  "Rp 150k - Rp 200k"),
+    ("Rp 250k+",            "Rp 250k+"),
+]
+
+
+class Unggahan(models.Model):
+    user        = models.ForeignKey(User, on_delete=models.CASCADE, related_name="unggahans")
+    nama_tempat = models.CharField(max_length=200)
+    alamat      = models.TextField()
+    ulasan      = models.TextField()
+    rating      = models.PositiveSmallIntegerField()  # 1–5
+    budget      = models.CharField(max_length=30, choices=BUDGET_CHOICES)
+    latitude    = models.FloatField(null=True, blank=True)
+    longitude   = models.FloatField(null=True, blank=True)
+    created_at  = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.nama_tempat} by {self.user.username}"
+
+
+class UnggahanImage(models.Model):
+    unggahan = models.ForeignKey(Unggahan, on_delete=models.CASCADE, related_name="images")
+    image    = models.ImageField(upload_to="unggahan_images/")
+    order    = models.PositiveSmallIntegerField(default=0)
+
+    class Meta:
+        ordering = ["order"]
+
+    def __str__(self):
+        return f"Image {self.order} for {self.unggahan}"
+
+
+class Bookmark(models.Model):
+    user     = models.ForeignKey(User, on_delete=models.CASCADE, related_name="bookmarks")
+    unggahan = models.ForeignKey(Unggahan, on_delete=models.CASCADE, related_name="bookmarked_by")
+    saved_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ("user", "unggahan")
+        ordering = ["-saved_at"]
+
+    def __str__(self):
+        return f"{self.user.username} → {self.unggahan.nama_tempat}"
+
+
+class SavedTripPlan(models.Model):
+    user       = models.ForeignKey(User, on_delete=models.CASCADE, related_name="trip_plans")
+    name       = models.CharField(max_length=200)
+    duration   = models.CharField(max_length=20)
+    image_url  = models.TextField(blank=True)
+    places     = models.JSONField(default=list)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.name} by {self.user.username}"
+
+
+SURVEY_MAX_ATTEMPTS = 2
+SURVEY_LOCKOUT_DAYS = 3
+
+
+class SurveyQuestion(models.Model):
+    question_text = models.CharField(max_length=500)
+    option_a      = models.CharField(max_length=200)
+    option_b      = models.CharField(max_length=200)
+    option_c      = models.CharField(max_length=200)
+    option_d      = models.CharField(max_length=200)
+    correct_index = models.IntegerField()   # 0=A, 1=B, 2=C, 3=D
+    area_tag      = models.CharField(max_length=100, blank=True)
+    is_demo       = models.BooleanField(default=False)  # always included in demo survey
+
+    def __str__(self):
+        return self.question_text[:60]
+
+
+class SurveyAttempt(models.Model):
+    user            = models.OneToOneField(User, on_delete=models.CASCADE, related_name="survey_attempt")
+    attempts_used   = models.IntegerField(default=0)
+    last_attempt_at = models.DateTimeField(null=True, blank=True)
+    locked_until    = models.DateTimeField(null=True, blank=True)
+
+    def is_locked(self):
+        return self.locked_until is not None and timezone.now() < self.locked_until
+
+    def __str__(self):
+        return f"SurveyAttempt({self.user.username}, used={self.attempts_used})"
