@@ -14,7 +14,7 @@ Widget buildTestApp() {
 }
 
 void main() {
-  group('MapPage – static UI', () {
+  group('MapPage - static UI', () {
     testWidgets('renders without crashing', (tester) async {
       await tester.pumpWidget(buildTestApp());
       await tester.pump();
@@ -54,7 +54,7 @@ void main() {
     });
   });
 
-  group('MapPage – BottomNavigationBar', () {
+  group('MapPage - BottomNavigationBar', () {
     testWidgets('has a BottomNavigationBar', (tester) async {
       await tester.pumpWidget(buildTestApp());
       await tester.pump();
@@ -84,7 +84,7 @@ void main() {
     });
   });
 
-  group('MapPage – FloatingActionButton', () {
+  group('MapPage - FloatingActionButton', () {
     testWidgets('has a "my location" FAB', (tester) async {
       await tester.pumpWidget(buildTestApp());
       await tester.pump();
@@ -94,7 +94,7 @@ void main() {
     });
   });
 
-  group('MapPage – search interaction', () {
+  group('MapPage - search interaction', () {
     testWidgets('entering text in search bar does not throw', (tester) async {
       await tester.pumpWidget(buildTestApp());
       await tester.pump();
@@ -122,7 +122,7 @@ void main() {
     });
   });
 
-  group('MapPage – initState', () {
+  group('MapPage - initState', () {
     testWidgets('initState calls _requestLocationAndMove without crashing', (
       tester,
     ) async {
