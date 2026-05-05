@@ -103,14 +103,12 @@ void main() {
     test('city dropdown disabled before province is selected', () {
       // City dropdown onChanged is null when _selectedProvinceId is null
       String? selectedProvinceId;
-      bool cityDropdownActive = selectedProvinceId != null;
-      expect(cityDropdownActive, isFalse);
+      expect(selectedProvinceId, isNull);
     });
 
     test('city dropdown enabled after province is selected', () {
       String? selectedProvinceId = '3'; // Banten
-      bool cityDropdownActive = selectedProvinceId != null;
-      expect(cityDropdownActive, isTrue);
+      expect(selectedProvinceId, isNotNull);
     });
   });
 
