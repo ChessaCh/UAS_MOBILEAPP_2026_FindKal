@@ -11,7 +11,7 @@ void main() {
       // Set up
       // Start the application
       app.main(); 
-      await tester.pumpAndSettle(const Duration(seconds: 3)); // Wait for app initialization and initial data fetch
+      await tester.pumpAndSettle(const Duration(seconds: 3)); // Wait for app initialization and initial data fetch (Fetch Places API mock)
       
       // Do
       // Trigger _openSearch() flow by tapping the Search Action Bar from HomePage
@@ -19,14 +19,17 @@ void main() {
       await tester.pumpAndSettle();
       
       // Expect that we landed on the `SearchOverlayPage`
+      // FITUR: Menampilkan Search bar
       expect(find.text('Cari tempat atau lokasi...'), findsOneWidget);
 
       // Do
+      // FITUR: Input handling
       // Trigger _onSearchChanged() by finding the TextField and entering a query
       await tester.enterText(find.byType(TextField), 'Bear');
       await tester.pumpAndSettle();
       
       // Expect
+      // FITUR: Update suggestion list (auto-suggest)
       // Verify the auto-suggestions update (_updateSuggestions) on the SearchOverlayPage
       // "Bear&Butter BSD" exists in your dummyUnggahans API mock.
       expect(find.text('Bear&Butter BSD'), findsWidgets);
@@ -36,6 +39,7 @@ void main() {
       await tester.tap(find.byIcon(Icons.close));
       await tester.pumpAndSettle();
 
+      // FITUR: Filtering
       // Tap the Filter icon to invoke _showFilterModal()
       await tester.tap(find.byIcon(Icons.tune));
       await tester.pumpAndSettle();
