@@ -1,6 +1,11 @@
+import 'dart:async';
+import 'dart:io';
+
+import 'package:findkal/ai_plan/trip_plan_selection_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:findkal/ai_plan/trip_plan_selection_page.dart';
+
+import '../../helpers/mock_network_images.dart';
 
 // ---------------------------------------------------------------------------
 // Widget tests for TripPlanSelectionPage
@@ -10,14 +15,20 @@ import 'package:findkal/ai_plan/trip_plan_selection_page.dart';
 
 /// Wraps the widget under test in a minimal MaterialApp with a fake
 /// navigator so push/pop calls don't throw.
-Widget buildTestApp({Widget? home}) {
-  return MaterialApp(
-    home: home ?? const TripPlanSelectionPage(),
-    routes: {'/home': (_) => const Scaffold(body: Text('Home'))},
-  );
-}
+Widget buildTestApp({Widget? home}) => MaterialApp(
+      home: home ?? const TripPlanSelectionPage(),
+      routes: {'/home': (_) => const Scaffold(body: Text('Home'))},
+    );
 
 void main() {
+  setUpAll(() {
+    HttpOverrides.global = MockHttpOverrides();
+  });
+
+  tearDownAll(() {
+    HttpOverrides.global = null;
+  });
+
   group('TripPlanSelectionPage – static UI', () {
     testWidgets('renders the page title "Rencana Perjalananmu"', (
       tester,
@@ -54,11 +65,21 @@ void main() {
     testWidgets('shows CircularProgressIndicator while loading trips', (
       tester,
     ) async {
-      await tester.pumpWidget(buildTestApp());
-      // Don't pump frames — stay in the initial loading state
+      final pendingTrips = Completer<List<Map<String, dynamic>>>();
+
+      await tester.pumpWidget(
+        buildTestApp(
+          home: TripPlanSelectionPage(
+            fetchTripPlans: () => pendingTrips.future,
+          ),
+        ),
+      );
       await tester.pump(Duration.zero);
 
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
+
+      pendingTrips.complete([]);
+      await tester.pump();
     });
   });
 
@@ -84,7 +105,7 @@ void main() {
   });
 
   group('TripPlanSelectionPage – navigation', () {
-    testWidgets('tapping "Buat Perjalanan" card triggers navigation', (
+    testWidgets('tapping "Buat Perjalanan" card does not throw error', (
       tester,
     ) async {
       await tester.pumpWidget(buildTestApp());

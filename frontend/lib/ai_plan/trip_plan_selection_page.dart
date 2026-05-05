@@ -4,8 +4,12 @@ import '../services/auth_state.dart';
 import 'ai_trip_detail_page.dart';
 import 'ai_trip_plan_page.dart';
 
+typedef TripPlansFetcher = Future<List<Map<String, dynamic>>> Function();
+
 class TripPlanSelectionPage extends StatefulWidget {
-  const TripPlanSelectionPage({super.key});
+  const TripPlanSelectionPage({super.key, this.fetchTripPlans});
+
+  final TripPlansFetcher? fetchTripPlans;
 
   @override
   State<TripPlanSelectionPage> createState() => _TripPlanSelectionPageState();
@@ -22,17 +26,26 @@ class _TripPlanSelectionPageState extends State<TripPlanSelectionPage> {
   }
 
   Future<void> _fetchTrips() async {
-    final userId = AuthState.currentUser?['id'];
-    if (userId == null) {
-      if (mounted) setState(() => _loading = false);
-      return;
-    }
     try {
-      final trips = await ApiService.fetchTripPlans(userId as int);
-      if (mounted) setState(() { _trips = trips; _loading = false; });
+      final fetchTripPlans = widget.fetchTripPlans;
+      final trips = fetchTripPlans != null
+          ? await fetchTripPlans()
+          : await _fetchTripPlansForCurrentUser();
+      if (mounted) {
+        setState(() {
+          _trips = trips;
+          _loading = false;
+        });
+      }
     } catch (_) {
       if (mounted) setState(() => _loading = false);
     }
+  }
+
+  Future<List<Map<String, dynamic>>> _fetchTripPlansForCurrentUser() async {
+    final userId = AuthState.currentUser?['id'];
+    if (userId == null) return [];
+    return ApiService.fetchTripPlans(userId as int);
   }
 
   @override
@@ -129,7 +142,9 @@ class _TripPlanSelectionPageState extends State<TripPlanSelectionPage> {
               const SizedBox(height: 16),
 
               if (_loading)
-                const Center(child: CircularProgressIndicator(color: Color(0xFF4AA5A6)))
+                const Center(
+                  child: CircularProgressIndicator(color: Color(0xFF4AA5A6)),
+                )
               else if (_trips.isEmpty)
                 const Padding(
                   padding: EdgeInsets.only(top: 20.0),
@@ -193,7 +208,9 @@ class _TripPlanSelectionPageState extends State<TripPlanSelectionPage> {
             height: 140,
             width: double.infinity,
             decoration: BoxDecoration(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(24),
+              ),
               image: DecorationImage(
                 image: NetworkImage(imageUrl),
                 fit: BoxFit.cover,
