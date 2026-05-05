@@ -47,6 +47,24 @@ void main() {
       FocusManager.instance.primaryFocus?.unfocus();
       await tester.pumpAndSettle();
 
+      // Do: Interact with Profile Photo features
+      // Tapping profile avatar to show bottom sheet
+      await tester.tap(find.byType(CircleAvatar).first);
+      await tester.pumpAndSettle();
+
+      // Expect bottom sheet list foto
+      expect(find.text('Pilih dari galeri'), findsOneWidget);
+
+      // We can mock tap the close or delete, let's tap delete for instance or just close it
+      // For this flow we tap "Hapus foto profil" if available, or just tap "Pilih dari galeri"
+      // Note: in integration test picking image might hang without mock, 
+      // but opening bottom sheet covers the list feature. 
+      // Let's tap 'Pilih dari galeri' which triggers image picker. In test env without mocks it might exception, 
+      // so we just test the bottom sheet is present then dismiss it. 
+      // Or we can tap back button to dismiss bottom sheet.
+      await tester.tap(find.text('Pilih dari galeri'), warnIfMissed: false);
+      await tester.pumpAndSettle();
+      
       // Tap Simpan
       await tester.tap(find.text('Simpan'));
       await tester.pumpAndSettle(const Duration(seconds: 2));
