@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:findkal/user_auth/register_address.dart';
-import '../helpers/fake_regional_http_client.dart';
+import '../../helpers/fake_regional_http_client.dart';
 
 /// Integration Test — Register Address Flow
 /// Tester: Arji
