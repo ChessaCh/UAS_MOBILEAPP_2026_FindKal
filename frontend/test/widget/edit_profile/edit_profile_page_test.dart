@@ -36,8 +36,8 @@ void main() {
       final saveButton = find.widgetWithText(ElevatedButton, 'Simpan');
       expect(saveButton, findsOneWidget);
 
-      // Do: verify "Ganti Foto Profil" text
-      expect(find.text('Ganti Foto Profil'), findsOneWidget);
+      // Do: verify camera icon
+      expect(find.byIcon(Icons.camera_alt), findsOneWidget);
     });
   });
 }

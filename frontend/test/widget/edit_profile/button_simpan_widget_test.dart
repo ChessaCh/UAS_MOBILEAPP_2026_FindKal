@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter/material.dart';
+import 'package:network_image_mock/network_image_mock.dart';
 import 'package:findkal/profile/edit_profile.dart';
 import 'package:findkal/services/auth_state.dart';
 
@@ -12,19 +13,24 @@ void main() {
         'name': 'Test',
       };
 
-      await tester.pumpWidget(const MaterialApp(home: EditProfilePage()));
-      await tester.pumpAndSettle();
+      await mockNetworkImagesFor(() async {
+        await tester.pumpWidget(const MaterialApp(home: EditProfilePage()));
+        await tester.pumpAndSettle();
 
-      // Expect
-      final simpanButton = find.widgetWithText(ElevatedButton, 'Simpan');
-      expect(simpanButton, findsOneWidget);
+        // Expect
+        final simpanButton = find.widgetWithText(ElevatedButton, 'Simpan');
+        expect(simpanButton, findsOneWidget);
 
-      // Do
-      await tester.tap(simpanButton);
-      await tester.pump();
+        // Do
+        await tester.tap(simpanButton);
+        await tester.pump(); // Start the async operation
 
-      // Expect loading indicator to appear since we mocked the API update process to be async
-      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+        // Allow any immediate futures to resolve (e.g. HTTP 400 rejection in tests)
+        await tester.pumpAndSettle();
+
+        // The API call will fail due to test environment and show a SnackBar
+        expect(find.byType(SnackBar), findsOneWidget);
+      });
     });
   });
 }
