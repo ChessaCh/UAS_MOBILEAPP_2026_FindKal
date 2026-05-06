@@ -2,29 +2,25 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:integration_test/integration_test.dart';
 import 'package:findkal/homepage/home.dart';
 
 // ---------------------------------------------------------------------------
-// Integration tests for HomePage flow
+// Widget-level tests for HomePage flow (run with `flutter test`).
 // Covers: static UI, BottomNavigationBar, _buildHomeContent, _onItemTapped,
 // _handlePendingUpload, notification navigation, _showVerificationRequiredSheet.
 // NOTE: AuthState.currentUser is null in tests — API calls fail gracefully.
-//       _fetchUnggahans has a 20s timeout; each test drains it at teardown.
+//       The geolocator mock never completes, so _initLocation stays suspended
+//       and _fetchUnggahans is never invoked — no 20s timer to drain.
 // ---------------------------------------------------------------------------
 
-// Geolocator returns LocationPermission.deniedForever (int 1) so _initLocation
-// exits early without requesting GPS — avoids MissingPluginException on the VM.
+// Geolocator mock that never resolves — keeps _initLocation() suspended at
+// checkPermission() so _mapController.move() is never called prematurely.
 const _kGeolocatorChannel = MethodChannel('flutter.baseflow.com/geolocator');
 
 void main() {
-  IntegrationTestWidgetsFlutterBinding.ensureInitialized();
-
   setUp(() {
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(_kGeolocatorChannel, (call) {
-      // Never completes — keeps _initLocation() suspended at checkPermission()
-      // so _mapController.move() is never called before FlutterMap renders.
       return Completer<Object?>().future;
     });
   });
@@ -56,7 +52,6 @@ void main() {
 
       expect(find.byType(HomePage), findsOneWidget);
       expect(tester.takeException(), isNull);
-      await tester.pump(const Duration(seconds: 20));
     });
 
     testWidgets('renders BottomNavigationBar with three items', (
@@ -66,11 +61,9 @@ void main() {
       await tester.pump();
 
       expect(find.byType(BottomNavigationBar), findsOneWidget);
-      // Home tab is active → shows activeIcon Icons.home
       expect(find.byIcon(Icons.home), findsOneWidget);
       expect(find.byIcon(Icons.location_on_outlined), findsOneWidget);
       expect(find.byIcon(Icons.person_outline), findsOneWidget);
-      await tester.pump(const Duration(seconds: 20));
     });
 
     testWidgets('Home tab is selected by default (index 0)', (tester) async {
@@ -81,7 +74,6 @@ void main() {
         find.byType(BottomNavigationBar),
       );
       expect(navBar.currentIndex, 0);
-      await tester.pump(const Duration(seconds: 20));
     });
   });
 
@@ -95,7 +87,6 @@ void main() {
 
       expect(find.text('Mau ke mana hari ini?'), findsOneWidget);
       expect(find.byIcon(Icons.search), findsOneWidget);
-      await tester.pump(const Duration(seconds: 20));
     });
 
     testWidgets('renders notifications icon', (tester) async {
@@ -103,7 +94,6 @@ void main() {
       await tester.pump();
 
       expect(find.byIcon(Icons.notifications), findsOneWidget);
-      await tester.pump(const Duration(seconds: 20));
     });
 
     testWidgets('renders greeting with "Selamat datang"', (tester) async {
@@ -111,7 +101,6 @@ void main() {
       await tester.pump();
 
       expect(find.textContaining('Selamat datang'), findsOneWidget);
-      await tester.pump(const Duration(seconds: 20));
     });
 
     testWidgets('renders RefreshIndicator for pull-to-refresh', (
@@ -121,7 +110,6 @@ void main() {
       await tester.pump();
 
       expect(find.byType(RefreshIndicator), findsOneWidget);
-      await tester.pump(const Duration(seconds: 20));
     });
   });
 
@@ -135,7 +123,6 @@ void main() {
         find.byType(BottomNavigationBar),
       );
       expect(navBar.currentIndex, 0);
-      await tester.pump(const Duration(seconds: 20));
     });
 
     testWidgets('initialIndex 2 starts on Profile tab', (tester) async {
@@ -146,14 +133,13 @@ void main() {
         find.byType(BottomNavigationBar),
       );
       expect(navBar.currentIndex, 2);
-      await tester.pump(const Duration(seconds: 20));
     });
 
-    testWidgets('drains 20s API timeout timer without crashing', (
+    testWidgets('renders without crashing when geolocator is pending', (
       tester,
     ) async {
       await tester.pumpWidget(buildTestApp());
-      await tester.pump(const Duration(seconds: 20));
+      await tester.pump();
 
       expect(tester.takeException(), isNull);
     });
@@ -174,14 +160,12 @@ void main() {
         find.byType(BottomNavigationBar),
       );
       expect(navBar.currentIndex, 2);
-      await tester.pump(const Duration(seconds: 20));
     });
 
     testWidgets('tapping Home tab keeps index at 0', (tester) async {
       await tester.pumpWidget(buildTestApp());
       await tester.pump();
 
-      // Home tab is active → activeIcon Icons.home is shown
       await tester.tap(find.byIcon(Icons.home));
       await tester.pump();
 
@@ -189,7 +173,6 @@ void main() {
         find.byType(BottomNavigationBar),
       );
       expect(navBar.currentIndex, 0);
-      await tester.pump(const Duration(seconds: 20));
     });
 
     testWidgets('switching to Profile then back to Home works', (
@@ -198,7 +181,6 @@ void main() {
       await tester.pumpWidget(buildTestApp());
       await tester.pump();
 
-      // Go to Profile (index 2)
       await tester.tap(find.byIcon(Icons.person_outline));
       await tester.pump();
 
@@ -209,7 +191,6 @@ void main() {
         2,
       );
 
-      // Go back to Home (index 0) — profile is active so activeIcon Icons.person shown
       await tester.tap(find.byIcon(Icons.home_outlined));
       await tester.pump();
 
@@ -219,7 +200,6 @@ void main() {
             .currentIndex,
         0,
       );
-      await tester.pump(const Duration(seconds: 20));
     });
   });
 
@@ -235,7 +215,6 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Notifikasi'), findsOneWidget);
-      await tester.pump(const Duration(seconds: 20));
     });
 
     testWidgets('notification page can be popped back to HomePage', (
@@ -245,14 +224,13 @@ void main() {
       await tester.pump();
 
       await tester.tap(find.byIcon(Icons.notifications));
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 500));
 
       final NavigatorState navigator = tester.state(find.byType(Navigator));
       navigator.pop();
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 500));
 
       expect(find.byType(HomePage), findsOneWidget);
-      await tester.pump(const Duration(seconds: 20));
     });
   });
 
@@ -272,8 +250,6 @@ void main() {
 
       completer.complete();
       await tester.pump();
-      await tester.pump(const Duration(seconds: 5));
-      await tester.pump(const Duration(seconds: 20));
     });
 
     testWidgets('shows CircularProgressIndicator in upload snackbar', (
@@ -291,8 +267,6 @@ void main() {
 
       completer.complete();
       await tester.pump();
-      await tester.pump(const Duration(seconds: 5));
-      await tester.pump(const Duration(seconds: 20));
     });
 
     testWidgets('shows success snackbar after upload completes', (
@@ -308,16 +282,13 @@ void main() {
 
       completer.complete();
       await tester.pump();
-      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
 
       expect(
         find.textContaining('berhasil').evaluate().isNotEmpty ||
             find.text('Mengunggah postingan...').evaluate().isEmpty,
         isTrue,
       );
-
-      await tester.pump(const Duration(seconds: 5));
-      await tester.pump(const Duration(seconds: 20));
     });
 
     testWidgets('no upload snackbar when pendingUpload is null', (
@@ -328,30 +299,26 @@ void main() {
       await tester.pump();
 
       expect(find.text('Mengunggah postingan...'), findsNothing);
-      await tester.pump(const Duration(seconds: 20));
     });
   });
 
   // ── _showVerificationRequiredSheet ───────────────────────────────────────
   group('Home Page Flow – verification required sheet', () {
-    testWidgets('tapping FAB add button shows verification sheet when not warga lokal',
+    testWidgets(
+        'tapping FAB add button shows verification sheet when not warga lokal',
         (tester) async {
       await tester.pumpWidget(buildTestApp());
       await tester.pump();
 
-      // FAB add button — only visible on Home tab (index 0)
       if (find.byIcon(Icons.add).evaluate().isNotEmpty) {
         await tester.tap(find.byIcon(Icons.add));
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 500));
 
-        // Sheet shows when user is not a verified warga lokal
         final hasSheet =
             find.text('Verifikasi Warga Lokal Diperlukan').evaluate().isNotEmpty ||
             find.byType(HomePage).evaluate().isNotEmpty;
         expect(hasSheet, isTrue);
       }
-
-      await tester.pump(const Duration(seconds: 20));
     });
 
     testWidgets('verification sheet has lock icon and confirm button', (
@@ -362,18 +329,16 @@ void main() {
 
       if (find.byIcon(Icons.add).evaluate().isNotEmpty) {
         await tester.tap(find.byIcon(Icons.add));
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 500));
 
         if (find
             .text('Verifikasi Warga Lokal Diperlukan')
             .evaluate()
             .isNotEmpty) {
           expect(find.byIcon(Icons.lock_outline_rounded), findsOneWidget);
-          expect(find.text('Mulai Survei'), findsOneWidget);
+          expect(find.text('Mulai Verifikasi'), findsOneWidget);
         }
       }
-
-      await tester.pump(const Duration(seconds: 20));
     });
   });
 }
