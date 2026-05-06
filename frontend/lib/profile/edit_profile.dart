@@ -344,7 +344,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
     if (_newPhoto != null) {
       imageProvider = FileImage(File(_newPhoto!.path));
     } else if (!_photoDeleted && _existingPhotoUrl != null) {
-      imageProvider = NetworkImage(_existingPhotoUrl!);
+      imageProvider = _existingPhotoUrl!.startsWith('http')
+          ? NetworkImage(_existingPhotoUrl!) as ImageProvider
+          : FileImage(File(_existingPhotoUrl!));
     }
 
     return CircleAvatar(

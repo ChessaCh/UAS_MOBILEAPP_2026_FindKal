@@ -31,30 +31,30 @@ void main() {
       expect(find.text('Password & Keamanan'), findsOneWidget);
     });
 
-    testWidgets('Menampilkan menu item "Ubah Email"', (tester) async {
+    testWidgets('Menampilkan label alamat email', (tester) async {
       await tester.pumpWidget(buildWidget());
 
-      expect(find.text('Ubah Email'), findsOneWidget);
+      expect(find.text('Alamat email'), findsOneWidget);
     });
 
-    testWidgets('Menampilkan menu item "Ubah Password"', (tester) async {
+    testWidgets('Menampilkan label kata sandi', (tester) async {
       await tester.pumpWidget(buildWidget());
 
-      expect(find.text('Ubah Password'), findsOneWidget);
+      expect(find.text('Kata sandi'), findsOneWidget);
     });
 
-    testWidgets('Menampilkan menu item "Hapus Akun"', (tester) async {
+    testWidgets('Menampilkan menu item "Hapus akun"', (tester) async {
       await tester.pumpWidget(buildWidget());
 
-      expect(find.text('Hapus Akun'), findsOneWidget);
+      expect(find.text('Hapus akun'), findsOneWidget);
     });
 
     testWidgets(
-        'Tap "Hapus Akun" membuka dialog konfirmasi hapus akun',
+        'Tap "Hapus akun" membuka dialog konfirmasi hapus akun',
         (tester) async {
       await tester.pumpWidget(buildWidget());
 
-      await tester.tap(find.text('Hapus Akun'));
+      await tester.tap(find.text('Hapus akun'));
       await tester.pumpAndSettle();
 
       expect(find.text('Yakin untuk hapus akun kamu?'), findsOneWidget);
@@ -64,11 +64,23 @@ void main() {
         (tester) async {
       await tester.pumpWidget(buildWidget());
 
-      await tester.tap(find.text('Hapus Akun'));
+      await tester.tap(find.text('Hapus akun'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Test User'), findsOneWidget);
-      expect(find.text('user@mail.com'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byType(Dialog),
+          matching: find.text('Test User'),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: find.byType(Dialog),
+          matching: find.text('user@mail.com'),
+        ),
+        findsOneWidget,
+      );
     });
   });
 }

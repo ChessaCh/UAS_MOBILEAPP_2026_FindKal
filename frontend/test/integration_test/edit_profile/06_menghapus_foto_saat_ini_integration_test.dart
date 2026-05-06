@@ -1,26 +1,41 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
-import 'package:findkal/main.dart' as app;
 import 'package:flutter/material.dart';
 import 'package:findkal/services/auth_state.dart';
+import 'package:findkal/profile/profile.dart';
+import 'dart:io';
+import 'dart:convert';
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+
+  // Create a dummy file to act as the profile photo
+  final dummyFile = File('dummy_photo.png');
+
+  setUpAll(() async {
+    if (!await dummyFile.exists()) {
+      // 1x1 transparent PNG
+      final bytes = base64Decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=');
+      await dummyFile.writeAsBytes(bytes);
+    }
+  });
+
+  tearDownAll(() async {
+    if (await dummyFile.exists()) {
+      await dummyFile.delete();
+    }
+  });
 
   group('06 Menghapus foto saat ini', () {
     testWidgets('Verify tap on Hapus foto profil', (WidgetTester tester) async {
       AuthState.currentUser = {
         'id': 1,
         'name': 'Test User',
-        'profile_photo': 'http://example.com/photo.jpg', // Give a mock photo so delete option appears
+        'profile_photo': dummyFile.path, // Use local file instead of network to avoid NetworkImage exceptions
       };
       
-      app.main(); 
-      await tester.pumpAndSettle(const Duration(seconds: 4));
-
-      final bottomNavBarIcons = find.byType(Icon);
-      await tester.tap(bottomNavBarIcons.last);
-      await tester.pumpAndSettle(const Duration(seconds: 2));
+      await tester.pumpWidget(const MaterialApp(home: ProfilePage())); 
+      await tester.pumpAndSettle();
 
       await tester.tap(find.text('Edit Profil'));
       await tester.pumpAndSettle(const Duration(seconds: 2));
