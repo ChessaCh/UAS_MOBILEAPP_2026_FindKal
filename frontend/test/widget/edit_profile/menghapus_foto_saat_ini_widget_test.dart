@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter/material.dart';
+import 'package:network_image_mock/network_image_mock.dart';
 import 'package:findkal/profile/edit_profile.dart';
 import 'package:findkal/services/auth_state.dart';
 
@@ -13,23 +14,25 @@ void main() {
         'profile_photo': 'http://dummy.url/photo.jpg'
       };
 
-      await tester.pumpWidget(const MaterialApp(home: EditProfilePage()));
-      await tester.pumpAndSettle();
+      await mockNetworkImagesFor(() async {
+        await tester.pumpWidget(const MaterialApp(home: EditProfilePage()));
+        await tester.pumpAndSettle();
 
-      // Do - Open bottom sheet 
-      await tester.tap(find.byType(CircleAvatar).first); // Tapping the avatar
-      await tester.pumpAndSettle();
+        // Do - Open bottom sheet 
+        await tester.tap(find.byType(CircleAvatar).first); // Tapping the avatar
+        await tester.pumpAndSettle();
 
-      // Expect bottom sheet items
-      final deleteOption = find.text('Hapus foto profil');
-      expect(deleteOption, findsOneWidget);
+        // Expect bottom sheet items
+        final deleteOption = find.text('Hapus foto profil');
+        expect(deleteOption, findsOneWidget);
 
-      // Do - Tap delete
-      await tester.tap(deleteOption);
-      await tester.pumpAndSettle();
+        // Do - Tap delete
+        await tester.tap(deleteOption);
+        await tester.pumpAndSettle();
 
-      // Expect bottom sheet is closed
-      expect(find.byType(BottomSheet), findsNothing);
+        // Expect bottom sheet is closed
+        expect(find.byType(BottomSheet), findsNothing);
+      });
     });
   });
 }
