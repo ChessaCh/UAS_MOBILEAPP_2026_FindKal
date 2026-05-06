@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:findkal/map/map_direction_page.dart';
@@ -7,8 +9,16 @@ import 'package:findkal/map/map_direction_page.dart';
 // Widget tests for MapDirectionPage
 // Tests: search bar, transport mode chips, loading overlay, error state,
 // back navigation, bottom nav bar.
+//
+// Geolocator mock strategy:
+//  • Global setUp uses a never-completing mock so _loadRoute() stays suspended.
+//    Static-UI tests only need pump() and assert on the loading state.
+//  • The "transport mode chips" group overrides with deniedForever (int 1) so
+//    _loadRoute() exits early → _buildMap() returns a plain Container (no
+//    FlutterMap, no tile requests) → pumpAndSettle() settles cleanly.
 // ---------------------------------------------------------------------------
 
+const _kGeolocatorChannel = MethodChannel('flutter.baseflow.com/geolocator');
 const _testDestination = LatLng(-6.047, 105.934); // Pantai Anyer
 
 Widget buildTestApp({String destinationName = 'Pantai Anyer'}) {
@@ -21,7 +31,35 @@ Widget buildTestApp({String destinationName = 'Pantai Anyer'}) {
   );
 }
 
+void _mockNeverCompletes() {
+  TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+      .setMockMethodCallHandler(_kGeolocatorChannel, (_) {
+    return Completer<Object?>().future;
+  });
+}
+
+void _mockDeniedForever() {
+  TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+      .setMockMethodCallHandler(_kGeolocatorChannel, (call) async {
+    switch (call.method) {
+      case 'checkPermission':
+      case 'requestPermission':
+        return 1; // LocationPermission.deniedForever
+      default:
+        return null;
+    }
+  });
+}
+
+void _clearMock() {
+  TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+      .setMockMethodCallHandler(_kGeolocatorChannel, null);
+}
+
 void main() {
+  setUp(_mockNeverCompletes);
+  tearDown(_clearMock);
+
   group('MapDirectionPage – static UI', () {
     testWidgets('renders without crashing', (tester) async {
       await tester.pumpWidget(buildTestApp());
@@ -109,30 +147,31 @@ void main() {
   });
 
   group('MapDirectionPage – transport mode chips (info card)', () {
-    // The info card only renders after route loads successfully.
-    // In test env the OSRM call will fail, so we verify error state instead.
-    testWidgets('shows error card when route fails to load', (tester) async {
-      await tester.pumpWidget(buildTestApp());
-      await tester.pumpAndSettle(const Duration(seconds: 5));
+    // deniedForever mock: _loadRoute() exits early with an error and
+    // _buildMap() returns a plain Container — no FlutterMap tile requests.
+    setUp(_mockDeniedForever);
+    // tearDown restores the global never-completing mock for subsequent groups.
+    tearDown(_mockNeverCompletes);
 
-      // Either error card or loading — both valid in offline test
-      final hasError = find.byIcon(Icons.error_outline).evaluate().isNotEmpty;
-      final hasLoading = find
-          .byType(CircularProgressIndicator)
-          .evaluate()
-          .isNotEmpty;
-      expect(hasError || hasLoading, isTrue);
+    testWidgets('shows error card when location is denied', (tester) async {
+      await tester.pumpWidget(buildTestApp());
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.error_outline), findsOneWidget);
     });
 
-    testWidgets('error card shows "Coba Lagi" retry button when visible', (
-      tester,
-    ) async {
+    testWidgets('error card shows "Coba Lagi" retry button', (tester) async {
       await tester.pumpWidget(buildTestApp());
-      await tester.pumpAndSettle(const Duration(seconds: 5));
+      await tester.pumpAndSettle();
 
-      if (find.text('Coba Lagi').evaluate().isNotEmpty) {
-        expect(find.text('Coba Lagi'), findsOneWidget);
-      }
+      expect(find.text('Coba Lagi'), findsOneWidget);
+    });
+
+    testWidgets('loading overlay is gone after permission error', (tester) async {
+      await tester.pumpWidget(buildTestApp());
+      await tester.pumpAndSettle();
+
+      expect(find.text('Mencari rute...'), findsNothing);
     });
   });
 

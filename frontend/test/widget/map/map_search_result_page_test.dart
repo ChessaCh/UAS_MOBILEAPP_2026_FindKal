@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:findkal/map/map_search_result_page.dart';
 
@@ -6,7 +8,16 @@ import 'package:findkal/map/map_search_result_page.dart';
 // Widget tests for MapSearchResultPage
 // Tests: search bar pre-fill, loading state, bottom nav, results panel,
 // search interaction, dispose behaviour.
+//
+// Geolocator mock strategy:
+//  • Global setUp uses a never-completing mock so _initLocationThenSearch()
+//    stays suspended — widget stays in loading state; no FlutterMap tile issues.
+//  • The "results panel" group overrides with deniedForever (int 1) so
+//    _initLocationThenSearch() exits early, network calls fail offline, and
+//    _buildMap() returns a plain Container (no FlutterMap) for safe assertions.
 // ---------------------------------------------------------------------------
+
+const _kGeolocatorChannel = MethodChannel('flutter.baseflow.com/geolocator');
 
 Widget buildTestApp({String query = 'Pantai Anyer'}) {
   return MaterialApp(
@@ -15,7 +26,35 @@ Widget buildTestApp({String query = 'Pantai Anyer'}) {
   );
 }
 
+void _mockNeverCompletes() {
+  TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+      .setMockMethodCallHandler(_kGeolocatorChannel, (_) {
+    return Completer<Object?>().future;
+  });
+}
+
+void _mockDeniedForever() {
+  TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+      .setMockMethodCallHandler(_kGeolocatorChannel, (call) async {
+    switch (call.method) {
+      case 'checkPermission':
+      case 'requestPermission':
+        return 1; // LocationPermission.deniedForever
+      default:
+        return null;
+    }
+  });
+}
+
+void _clearMock() {
+  TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+      .setMockMethodCallHandler(_kGeolocatorChannel, null);
+}
+
 void main() {
+  setUp(_mockNeverCompletes);
+  tearDown(_clearMock);
+
   group('MapSearchResultPage – static UI', () {
     testWidgets('renders without crashing', (tester) async {
       await tester.pumpWidget(buildTestApp());
@@ -100,6 +139,9 @@ void main() {
   });
 
   group('MapSearchResultPage – results panel', () {
+    setUp(_mockDeniedForever);
+    tearDown(_mockNeverCompletes);
+
     testWidgets('shows "Lokasi tidak ditemukan" when no results', (
       tester,
     ) async {
