@@ -1,27 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
 
 import 'package:findkal/settingpage/survey_question_page.dart';
-import 'package:findkal/services/api_service.dart';
 
 
-@GenerateMocks([ApiService])
 void main() {
   group('SurveyQuestionPage - Widget Test', () {
-    final mockQuestions = [
-      {
-        'id': 1,
-        'question': 'Apa nama jembatan terkenal di kota ini?',
-        'options': ['Jembatan Merah', 'Jembatan Biru', 'Jembatan Hijau', 'Jembatan Emas'],
-      },
-      {
-        'id': 2,
-        'question': 'Kuliner khas daerah ini adalah?',
-        'options': ['Rendang', 'Gudeg', 'Pempek', 'Soto'],
-      },
-    ];
-
     Widget buildWidget({String region = 'Jakarta'}) {
       return MaterialApp(
         home: SurveyQuestionPage(region: region),

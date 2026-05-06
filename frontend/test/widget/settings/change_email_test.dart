@@ -1,13 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
 
 import 'package:findkal/settingpage/change_email_page.dart';
-import 'package:findkal/services/api_service.dart';
 import 'package:findkal/services/auth_state.dart';
 
 
-@GenerateMocks([ApiService])
 void main() {
   group('ChangeEmailPage - Widget Test', () {
     setUp(() {
