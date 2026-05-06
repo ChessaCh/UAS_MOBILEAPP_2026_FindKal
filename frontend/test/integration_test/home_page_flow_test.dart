@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:findkal/homepage/home.dart';
@@ -12,8 +13,26 @@ import 'package:findkal/homepage/home.dart';
 //       _fetchUnggahans has a 20s timeout; each test drains it at teardown.
 // ---------------------------------------------------------------------------
 
+// Geolocator returns LocationPermission.deniedForever (int 1) so _initLocation
+// exits early without requesting GPS — avoids MissingPluginException on the VM.
+const _kGeolocatorChannel = MethodChannel('flutter.baseflow.com/geolocator');
+
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+
+  setUp(() {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(_kGeolocatorChannel, (call) {
+      // Never completes — keeps _initLocation() suspended at checkPermission()
+      // so _mapController.move() is never called before FlutterMap renders.
+      return Completer<Object?>().future;
+    });
+  });
+
+  tearDown(() {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(_kGeolocatorChannel, null);
+  });
 
   Widget buildTestApp({
     int initialIndex = 0,

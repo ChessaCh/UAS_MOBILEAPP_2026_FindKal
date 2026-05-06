@@ -145,7 +145,9 @@ class _HomePageState extends State<HomePage> {
           _locating = false;
           _userLocation = _defaultLocation;
         });
-        _mapController.move(_defaultLocation, 15);
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _mapController.move(_defaultLocation, 15);
+        });
       }
       await _fetchUnggahans(null, null);
       return;
@@ -159,7 +161,9 @@ class _HomePageState extends State<HomePage> {
           _locating = false;
           _userLocation = _defaultLocation;
         });
-        _mapController.move(_defaultLocation, 15);
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _mapController.move(_defaultLocation, 15);
+        });
       }
       await _fetchUnggahans(null, null);
       return;
@@ -184,7 +188,9 @@ class _HomePageState extends State<HomePage> {
           _locating = false;
           _userLocation = verifiedLoc;
         });
-        _mapController.move(_userLocation!, 15);
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _mapController.move(_userLocation!, 15);
+        });
       }
       await _fetchUnggahans(verifiedLoc.latitude, verifiedLoc.longitude);
     } catch (_) {
@@ -194,7 +200,9 @@ class _HomePageState extends State<HomePage> {
           _locating = false;
           _userLocation = _defaultLocation;
         });
-        _mapController.move(_defaultLocation, 15);
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _mapController.move(_defaultLocation, 15);
+        });
       }
       await _fetchUnggahans(null, null);
     }

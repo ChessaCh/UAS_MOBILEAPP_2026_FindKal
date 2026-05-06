@@ -5,7 +5,9 @@ import '../models/unggahan.dart';
 import 'place_detail_page.dart';
 
 class SearchOverlayPage extends StatefulWidget {
-  const SearchOverlayPage({super.key});
+  final Future<List<Map<String, dynamic>>> Function()? fetchFn;
+
+  const SearchOverlayPage({super.key, this.fetchFn});
 
   @override
   State<SearchOverlayPage> createState() => _SearchOverlayPageState();
@@ -72,7 +74,7 @@ class _SearchOverlayPageState extends State<SearchOverlayPage> {
 
   Future<void> _fetchPlaces() async {
     try {
-      final jsonList = await ApiService.fetchUnggahans();
+      final jsonList = await (widget.fetchFn ?? ApiService.fetchUnggahans)();
       final unggahans = jsonList.map((j) => Unggahan.fromJson(j)).toList();
 
       final Map<String, List<Unggahan>> grouped = {};
