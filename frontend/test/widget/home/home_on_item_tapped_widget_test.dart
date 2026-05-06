@@ -30,19 +30,27 @@ void main() {
         find.byType(BottomNavigationBar),
       );
       expect(navBar.currentIndex, 2);
+
+      // Drain the 20s timeout timer from _fetchUnggahans to avoid
+      // "pending timer" errors at test teardown.
+      await tester.pump(const Duration(seconds: 20));
     });
 
     testWidgets('tapping Home tab keeps index at 0', (tester) async {
       await tester.pumpWidget(buildTestApp());
       await tester.pump();
 
-      await tester.tap(find.byIcon(Icons.home_outlined));
+      // Home tab is active (index 0) so its activeIcon (Icons.home) is shown,
+      // not Icons.home_outlined. Use the active icon for the tap target.
+      await tester.tap(find.byIcon(Icons.home));
       await tester.pump();
 
       final navBar = tester.widget<BottomNavigationBar>(
         find.byType(BottomNavigationBar),
       );
       expect(navBar.currentIndex, 0);
+
+      await tester.pump(const Duration(seconds: 20));
     });
   });
 }

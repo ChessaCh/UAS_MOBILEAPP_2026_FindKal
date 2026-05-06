@@ -24,6 +24,7 @@ void main() {
 
       expect(find.byType(HomePage), findsOneWidget);
       expect(tester.takeException(), isNull);
+      await tester.pump(const Duration(seconds: 20));
     });
 
     testWidgets('renders BottomNavigationBar', (tester) async {
@@ -31,6 +32,7 @@ void main() {
       await tester.pump();
 
       expect(find.byType(BottomNavigationBar), findsOneWidget);
+      await tester.pump(const Duration(seconds: 20));
     });
 
     testWidgets('BottomNavigationBar has Home, Location, and Profile items', (
@@ -39,9 +41,11 @@ void main() {
       await tester.pumpWidget(buildTestApp());
       await tester.pump();
 
-      expect(find.byIcon(Icons.home_outlined), findsOneWidget);
+      // Home tab is active (index 0) so its activeIcon (Icons.home) is shown.
+      expect(find.byIcon(Icons.home), findsOneWidget);
       expect(find.byIcon(Icons.location_on_outlined), findsOneWidget);
       expect(find.byIcon(Icons.person_outline), findsOneWidget);
+      await tester.pump(const Duration(seconds: 20));
     });
 
     testWidgets('Home tab is selected by default (index 0)', (tester) async {
@@ -52,6 +56,7 @@ void main() {
         find.byType(BottomNavigationBar),
       );
       expect(navBar.currentIndex, 0);
+      await tester.pump(const Duration(seconds: 20));
     });
   });
 
@@ -65,6 +70,7 @@ void main() {
         find.byType(BottomNavigationBar),
       );
       expect(navBar.currentIndex, 0);
+      await tester.pump(const Duration(seconds: 20));
     });
 
     testWidgets('initialIndex 2 shows Profile tab selected', (tester) async {
@@ -75,6 +81,7 @@ void main() {
         find.byType(BottomNavigationBar),
       );
       expect(navBar.currentIndex, 2);
+      await tester.pump(const Duration(seconds: 20));
     });
 
     testWidgets('initState does not crash', (tester) async {
@@ -82,6 +89,7 @@ void main() {
       await tester.pump();
 
       expect(tester.takeException(), isNull);
+      await tester.pump(const Duration(seconds: 20));
     });
 
     testWidgets('drains 20s API timeout timer without crashing', (
@@ -101,6 +109,7 @@ void main() {
       await tester.pump();
 
       expect(find.byIcon(Icons.search), findsOneWidget);
+      await tester.pump(const Duration(seconds: 20));
     });
 
     testWidgets('renders "Mau ke mana hari ini?" search hint', (
@@ -110,6 +119,7 @@ void main() {
       await tester.pump();
 
       expect(find.text('Mau ke mana hari ini?'), findsOneWidget);
+      await tester.pump(const Duration(seconds: 20));
     });
 
     testWidgets('renders notifications icon', (tester) async {
@@ -117,6 +127,7 @@ void main() {
       await tester.pump();
 
       expect(find.byIcon(Icons.notifications), findsOneWidget);
+      await tester.pump(const Duration(seconds: 20));
     });
 
     testWidgets('renders greeting text with "Selamat datang"', (
@@ -126,6 +137,7 @@ void main() {
       await tester.pump();
 
       expect(find.textContaining('Selamat datang'), findsOneWidget);
+      await tester.pump(const Duration(seconds: 20));
     });
 
     testWidgets('renders RefreshIndicator for pull-to-refresh', (
@@ -135,6 +147,7 @@ void main() {
       await tester.pump();
 
       expect(find.byType(RefreshIndicator), findsOneWidget);
+      await tester.pump(const Duration(seconds: 20));
     });
   });
 }

@@ -51,7 +51,7 @@ void main() {
             fetchTripPlans: () async => [
               {
                 'id': 1,
-                'tripName': 'Liburan Banten',
+                'name': 'Liburan Banten',
                 'province': 'Banten',
                 'duration': '3',
                 'budget': 'Hemat',
@@ -59,6 +59,8 @@ void main() {
                 'themes': ['Nature'],
                 'places': [],
                 'transport': [],
+                'image_url':
+                    'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?auto=format&fit=crop&w=800&q=80',
               },
             ],
           ),
