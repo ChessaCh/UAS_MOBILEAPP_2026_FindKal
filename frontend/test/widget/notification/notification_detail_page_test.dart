@@ -147,7 +147,14 @@ void main() {
       await tester.pumpWidget(buildTestApp(places: places));
       await tester.pumpAndSettle();
 
-      expect(find.textContaining('Gunung Salak'), findsOneWidget);
+      // Address is rendered inside RichText/TextSpan, not a plain Text widget,
+      // so find.textContaining won't match — use widget predicate instead.
+      expect(
+        find.byWidgetPredicate((widget) =>
+            widget is RichText &&
+            widget.text.toPlainText().contains('Gunung Salak')),
+        findsOneWidget,
+      );
     });
 
     testWidgets('does not show dummy locations when real places provided', (
