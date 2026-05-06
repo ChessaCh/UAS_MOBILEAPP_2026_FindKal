@@ -16,9 +16,8 @@ void main() {
       'Halaman terbuka dan menampilkan loading indicator awal',
       (tester) async {
         await tester.pumpWidget(buildApp());
-        await tester.pump(); // sebelum API selesai
 
-        // Loading indicator harus muncul dulu
+        // Loading indicator harus muncul di frame awal sebelum API selesai
         expect(find.byType(CircularProgressIndicator), findsOneWidget);
       },
     );
@@ -92,7 +91,7 @@ void main() {
         );
 
         await tester.tap(find.text('Mulai Survey'));
-        await tester.pump();
+        await tester.pumpAndSettle();
 
         expect(find.byType(SurveyQuestionPage), findsOneWidget);
       },

@@ -150,13 +150,13 @@ void main() {
       }
     });
 
-    testWidgets('Tombol Verify memiliki border radius melengkung',
+    testWidgets('Tombol Verify ada di dalam dialog',
         (WidgetTester tester) async {
       await tester.pumpWidget(buildDialogWithVerify(onVerify: () {}));
       await tester.tap(find.text('Buka'));
       await tester.pumpAndSettle();
 
-      expect(find.byType(ElevatedButton), findsOneWidget);
+      expect(find.widgetWithText(ElevatedButton, 'Verify'), findsOneWidget);
     });
 
     testWidgets('Tidak ada CircularProgressIndicator sebelum Verify ditekan',

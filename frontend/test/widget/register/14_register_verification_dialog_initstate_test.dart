@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -165,14 +166,27 @@ class _TestableVerificationDialog extends StatefulWidget {
 class _TestableVerificationDialogState
     extends State<_TestableVerificationDialog> {
   int _start = 30;
+  Timer? _timer;
 
   @override
   void initState() {
     super.initState();
-    // Simulasikan timer
-    Future.delayed(Duration.zero, () {
-      if (mounted) setState(() {});
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) return;
+      if (_start > 0) {
+        setState(() {
+          _start -= 1;
+        });
+      } else {
+        timer.cancel();
+      }
     });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
   }
 
   @override
