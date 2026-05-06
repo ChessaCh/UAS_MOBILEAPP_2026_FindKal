@@ -87,7 +87,7 @@ void main() {
       await tester.pumpWidget(const MaterialApp(home: AiTripPlanPage()));
       await tester.pumpAndSettle(const Duration(seconds: 3));
 
-      expect(find.byType(DropdownButtonFormField), findsWidgets);
+      expect(find.byType(DropdownButton<String>), findsWidgets);
     });
 
     testWidgets('renders "Buat Rencana Baru" or trip name input', (
