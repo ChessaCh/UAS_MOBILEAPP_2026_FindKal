@@ -44,7 +44,7 @@ void main() {
       await tester.pumpWidget(buildTestApp());
       await tester.pumpAndSettle();
 
-      expect(find.byIcon(Icons.arrow_back_ios), findsOneWidget);
+      expect(find.byIcon(Icons.arrow_back_ios_new_rounded), findsOneWidget);
     });
   });
 
@@ -102,12 +102,12 @@ void main() {
 
   // ── Edit mode ─────────────────────────────────────────────────────────────
   group('Bookmark Flow – edit mode', () {
-    testWidgets('AppBar has edit/action button', (tester) async {
+    testWidgets('header area renders with Markah title', (tester) async {
       await tester.pumpWidget(buildTestApp());
       await tester.pumpAndSettle();
 
-      // The AppBar has actions — verify it renders
-      expect(find.byType(AppBar), findsOneWidget);
+      // BookmarkPage uses a custom header Row inside body (no AppBar widget).
+      expect(find.text('Markah'), findsOneWidget);
     });
   });
 
@@ -152,7 +152,7 @@ void main() {
       await tester.tap(find.text('Open'));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byIcon(Icons.arrow_back_ios));
+      await tester.tap(find.byIcon(Icons.arrow_back_ios_new_rounded));
       await tester.pumpAndSettle();
 
       expect(find.text('Open'), findsOneWidget);
