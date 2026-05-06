@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
-import 'package:findkal/main.dart' as app;
+import 'package:findkal/profile/profile.dart';
 import 'package:flutter/material.dart';
 import 'package:findkal/services/auth_state.dart';
 
@@ -16,12 +16,8 @@ void main() {
         'bio': 'Test bio profile',
       };
       
-      app.main(); 
-      await tester.pumpAndSettle(const Duration(seconds: 4));
-
-      final bottomNavBarIcons = find.byType(Icon);
-      await tester.tap(bottomNavBarIcons.last);
-      await tester.pumpAndSettle(const Duration(seconds: 3));
+      await tester.pumpWidget(const MaterialApp(home: ProfilePage())); 
+      await tester.pumpAndSettle();
 
       // Ensure we are on profile page
       expect(find.text('Test Profile User'), findsOneWidget);

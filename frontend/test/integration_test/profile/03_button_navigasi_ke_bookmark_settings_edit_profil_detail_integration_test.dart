@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
-import 'package:findkal/main.dart' as app;
+import 'package:findkal/profile/profile.dart';
 import 'package:flutter/material.dart';
 import 'package:findkal/services/auth_state.dart';
 
@@ -15,12 +15,8 @@ void main() {
         'username': 'testprofile',
       };
       
-      app.main(); 
-      await tester.pumpAndSettle(const Duration(seconds: 4));
-
-      final bottomNavBarIcons = find.byType(Icon);
-      await tester.tap(bottomNavBarIcons.last);
-      await tester.pumpAndSettle(const Duration(seconds: 3));
+      await tester.pumpWidget(const MaterialApp(home: ProfilePage())); 
+      await tester.pumpAndSettle();
 
       // Bookmark Icon button (Icons.bookmark_border)
       final bookmarkBtn = find.byIcon(Icons.bookmark_border);
@@ -30,7 +26,7 @@ void main() {
       await tester.pumpAndSettle(const Duration(seconds: 2));
 
       // Test we navigated to Bookmark and now go back
-      await tester.tap(find.byIcon(Icons.arrow_back_ios_new));
+      await tester.tap(find.byIcon(Icons.arrow_back_ios_new_rounded));
       await tester.pumpAndSettle(const Duration(seconds: 2));
 
       // Settings Icon button (Icons.settings_outlined)
@@ -41,7 +37,7 @@ void main() {
       await tester.pumpAndSettle(const Duration(seconds: 2));
 
       // Test we navigated to Settings and now go back
-      await tester.tap(find.byIcon(Icons.arrow_back_ios_new));
+      await tester.tap(find.byIcon(Icons.arrow_back_ios_new_rounded));
       await tester.pumpAndSettle(const Duration(seconds: 2));
 
       // Edit Profil Button

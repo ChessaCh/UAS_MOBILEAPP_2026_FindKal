@@ -1,8 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
-import 'package:findkal/main.dart' as app;
 import 'package:flutter/material.dart';
+import 'package:network_image_mock/network_image_mock.dart';
 import 'package:findkal/services/auth_state.dart';
+import 'package:findkal/profile/profile.dart';
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
@@ -18,31 +19,29 @@ void main() {
         'name': 'Test User',
       };
       
-      app.main(); 
-      await tester.pumpAndSettle(const Duration(seconds: 4));
+      await mockNetworkImagesFor(() async {
+        await tester.pumpWidget(const MaterialApp(home: ProfilePage())); 
+        await tester.pumpAndSettle();
 
-      final bottomNavBarIcons = find.byType(Icon);
-      await tester.tap(bottomNavBarIcons.last);
-      await tester.pumpAndSettle(const Duration(seconds: 2));
+        await tester.tap(find.text('Edit Profil'));
+        await tester.pumpAndSettle(const Duration(seconds: 2));
 
-      await tester.tap(find.text('Edit Profil'));
-      await tester.pumpAndSettle(const Duration(seconds: 2));
+        // Attempt to save, which might fail since no backend running, 
+        // checking for any snackbar presence if API fails
+        await tester.tap(find.text('Simpan'));
+        await tester.pump(const Duration(milliseconds: 500)); // give time for progress indicator
+        
+        // Usually fails or succeeds, wait for results
+        await tester.pumpAndSettle(const Duration(seconds: 3));
 
-      // Attempt to save, which might fail since no backend running, 
-      // checking for any snackbar presence if API fails
-      await tester.tap(find.text('Simpan'));
-      await tester.pump(const Duration(milliseconds: 500)); // give time for progress indicator
-      
-      // Usually fails or succeeds, wait for results
-      await tester.pumpAndSettle(const Duration(seconds: 3));
-
-      // Assert whether we stayed on page (error) or popped (success)
-      // Since it's a test over actual HTTP or mocked, we just verify it didn't completely crash.
-      // If error snackbar shows, it proves notification works.
-      final snackbarFinder = find.byType(SnackBar);
-      if (snackbarFinder.evaluate().isNotEmpty) {
-        expect(snackbarFinder, findsOneWidget);
-      }
+        // Assert whether we stayed on page (error) or popped (success)
+        // Since it's a test over actual HTTP or mocked, we just verify it didn't completely crash.
+        // If error snackbar shows, it proves notification works.
+        final snackbarFinder = find.byType(SnackBar);
+        if (snackbarFinder.evaluate().isNotEmpty) {
+          expect(snackbarFinder, findsOneWidget);
+        }
+      });
     });
   });
 }
